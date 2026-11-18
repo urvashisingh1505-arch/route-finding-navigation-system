@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Route Finding Navigation System - Urvashi Singh</title>
+<style>
+  *{box-sizing:border-box;font-family:Arial,sans-serif}
+  body{margin:0;background:#f4f6f8;color:#222}
+  header{background:#212529;color:#fff;padding:16px;text-align:center;font-size:22px;font-weight:bold}
+  .wrap{display:flex;flex-wrap:wrap;gap:16px;max-width:1000px;margin:20px auto;padding:0 16px}
+  .panel{background:#fff;border-radius:10px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+  .controls{flex:1 1 280px}
+  .mapbox{flex:2 1 500px}
+  label{font-weight:bold;display:block;margin:14px 0 6px}
+  select,button{width:100%;padding:11px;border-radius:8px;border:1px solid #bbb;font-size:15px}
+  button{background:#198754;color:#fff;border:none;font-weight:bold;cursor:pointer;margin-top:18px}
+  button:hover{background:#157347}
+  #result{margin-top:18px;background:#f8f9fa;border:1px solid #ddd;border-radius:8px;padding:14px;min-height:90px;line-height:1.6;white-space:pre-line}
+  canvas{width:100%;height:auto;background:#fff}
+  footer{text-align:center;color:#666;padding:18px;font-size:14px}
+</style>
+</head>
+<body>
+<header>Route Finding Navigation System</header>
+<div class="wrap">
+  <div class="panel controls">
+    <div><b>Made by: Urvashi Singh</b><br>Java + DSA Project (Web Version)<br>Graph &amp; Dijkstra's Algorithm</div>
+    <label>From (Source)</label>
+    <select id="src"></select>
+    <label>To (Destination)</label>
+    <select id="dst"></select>
+    <button onclick="findRoute()">Find Shortest Route</button>
+    <div id="result">Select source and destination, then click Find Shortest Route.</div>
+  </div>
+  <div class="panel mapbox"><canvas id="map" width="620" height="520"></canvas></div>
+</div>
+<footer>Route Finding Navigation System &bull; Graph + Dijkstra's Algorithm &bull; Urvashi Singh</footer>
+<script>
+const pos={Chowk:[15,35],Aminabad:[35,45],Hazratganj:[55,40],Charbagh:[40,70],Alambagh:[30,88],Rajajipuram:[12,70],Aliganj:[50,15],Jankipuram:[35,8],"Gomti Nagar":[82,35],"Indira Nagar":[78,12]};
+const edges=[["Hazratganj","Aminabad",2],["Hazratganj","Charbagh",4],["Hazratganj","Gomti Nagar",6],["Hazratganj","Aliganj",5],["Aminabad","Chowk",3],["Aminabad","Charbagh",3],["Chowk","Rajajipuram",5],["Charbagh","Alambagh",4],["Alambagh","Rajajipuram",6],["Aliganj","Jankipuram",3],["Aliganj","Indira Nagar",4],["Jankipuram","Rajajipuram",7],["Jankipuram","Indira Nagar",5],["Indira Nagar","Gomti Nagar",4]];
+const graph={}; Object.keys(pos).forEach(p=>graph[p]=[]);
+edges.forEach(([a,b,d])=>{graph[a].push([b,d]);graph[b].push([a,d]);});
+const srcSel=document.getElementById('src'),dstSel=document.getElementById('dst');
+Object.keys(pos).sort().forEach(p=>{srcSel.add(new Option(p,p));dstSel.add(new Option(p,p));});
+srcSel.value="Charbagh"; dstSel.value="Gomti Nagar";
+let highlight=[];
+function dijkstra(s,d){
+  const dist={},parent={}; Object.keys(pos).forEach(p=>dist[p]=Infinity); dist[s]=0;
+  const visited=new Set(),pq=[[0,s]];
+  while(pq.length){ pq.sort((a,b)=>a[0]-b[0]); const [du,cur]=pq.shift(); if(visited.has(cur))continue; visited.add(cur); if(cur===d)break;
+    for(const [to,w] of graph[cur]){ const nd=du+w; if(nd<dist[to]){dist[to]=nd;parent[to]=cur;pq.push([nd,to]);} } }
+  if(dist[d]===Infinity) return {path:[],dist:-1};
+  const path=[]; let step=d; while(step){path.unshift(step); step=parent[step];} return {path,dist:dist[d]};
+}
+function draw(){
+  const c=document.getElementById('map'),x=c.getContext('2d'); x.clearRect(0,0,c.width,c.height);
+  const px=p=>[pos[p][0]/100*(c.width-80)+40, pos[p][1]/100*(c.height-80)+40];
+  const isHl=(a,b)=>highlight.some((v,i)=>i+1<highlight.length&&((highlight[i]===a&&highlight[i+1]===b)||(highlight[i]===b&&highlight[i+1]===a)));
+  edges.forEach(([a,b,d])=>{const p1=px(a),p2=px(b); x.strokeStyle=isHl(a,b)?"#198754":"#ccc"; x.lineWidth=isHl(a,b)?5:2; x.beginPath();x.moveTo(...p1);x.lineTo(...p2);x.stroke(); x.fillStyle="#555";x.font="12px Arial";x.fillText(d+" km",(p1[0]+p2[0])/2,(p1[1]+p2[1])/2);});
+  Object.keys(pos).forEach(p=>{const [cx,cy]=px(p); x.fillStyle=highlight.includes(p)?"#198754":"#0d6efd"; x.beginPath();x.arc(cx,cy,11,0,7);x.fill(); x.fillStyle="#000";x.font="bold 13px Arial";x.textAlign="center";x.fillText(p,cx,cy-18);});
+}
+function findRoute(){
+  const s=srcSel.value,d=dstSel.value;
+  if(s===d){document.getElementById('result').textContent="Source and Destination are same.\nPlease choose different places.";highlight=[];draw();return;}
+  const r=dijkstra(s,d); highlight=r.path; draw();
+  document.getElementById('result').textContent="Shortest Route:\n"+r.path.join(" -> ")+"\n\nTotal Distance: "+r.dist+" km\nTotal Stops: "+r.path.length;
+}
+draw(); findRoute();
+</script>
+</body>
+</html>
